@@ -1,0 +1,59 @@
+jenkins:
+  controller:
+    JCasC:
+      configScripts:
+        build-image-jobs: |
+          jobs:
+            - script: >
+                multibranchPipelineJob('nettools-build') {
+                  branchSources {
+                    git {
+                      id('minikube-lab')
+                      remote('https://github.com/mnhat3896/minikube-lab.git')
+                    }
+                  }
+                  factory {
+                    workflowBranchProjectFactory {
+                      scriptPath('network-tools/Jenkinsfile')
+                    }
+                  }
+                }
+                // To add another job for a different Jenkinsfile (e.g., test.jenkinsfile):
+                // multibranchPipelineJob('nettools-test') {
+                //   branchSources {
+                //     git {
+                //       id('minikube-lab-test')
+                //       remote('https://github.com/mnhat3896/minikube-lab.git')
+                //     }
+                //   }
+                //   factory {
+                //     workflowBranchProjectFactory {
+                //       scriptPath('network-tools/test.jenkinsfile')
+                //     }
+                //   }
+                // }
+
+    # overwritePlugins: true
+    installPlugins:
+      - kubernetes:4392.v19cea_fdb_5913
+      - workflow-aggregator:608.v67378e9d3db_1
+      - git:5.8.0
+      - configuration-as-code:2006.v001a_2ca_6b_574
+      - job-dsl:1.93
+
+  agent:
+    enabled: true
+    podTemplates:
+      nettools-agent: |
+        - name: nettools-agent
+          label: nettools-agent
+          serviceAccount: jenkins
+          containers:
+            - name: kaniko
+              image: gcr.io/kaniko-project/executor:debug
+              command: "cat"
+              ttyEnabled: true
+            - name: alpine
+              image: alpine:3.20
+              command: "cat"
+              ttyEnabled: true

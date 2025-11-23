@@ -1,0 +1,19 @@
+pipeline {
+  agent {
+    label 'nettools-agent'
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+    stage('Build') {
+      steps {
+        container('kaniko') {
+          sh '/kaniko/executor --context `pwd` --dockerfile `pwd`/network-tools/Dockerfile --no-push'
+        }
+      }
+    }
+  }
+}
