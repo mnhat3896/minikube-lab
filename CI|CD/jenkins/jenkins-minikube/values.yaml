@@ -1,0 +1,74 @@
+jenkins:
+  controller:
+    JCasC:
+      configScripts:
+        my-jobs: |
+          jobs:
+            - script: >
+                pipelineJob('testjobs/build-nettools') {
+                  definition {
+                    cps {
+                      script("""\
+                        pipeline {
+                          agent {
+                            kubernetes {
+                              yaml '''
+                                apiVersion: v1
+                                kind: Pod
+                                spec:
+                                  containers:
+                                  - name: kaniko
+                                    image: gcr.io/kaniko-project/executor:debug
+                                    command:
+                                    - cat
+                                    tty: true
+                              '''
+                            }
+                          }
+                          stages {
+                            stage('Build') {
+                              steps {
+                                writeFile file: 'Dockerfile', text: '''
+                                  FROM alpine:3.20
+                                  # create non-root
+                                  RUN addgroup -S nettool && adduser -S -G nettool nettool
+                                  WORKDIR /home/nettool
+                                  RUN apk add --no-cache bind-tools iputils iproute2 tcpdump mtr iperf3 curl wget openssl jq postgresql-client redis && rm -rf /var/cache/apk/*
+                                  # remove the apk binary to discourage later in-container installs
+                                  RUN rm -f /sbin/apk || true
+                                  # Reduce SUID/SGID
+                                  RUN find / -type f -perm /6000 -exec chmod a-s {} + || true
+                                  ENV PATH=/usr/bin:/bin:/usr/sbin:/sbin:/home/nettool:\$PATH
+                                  USER nettool
+                                  ENTRYPOINT ["/bin/sh"]
+                                '''.stripIndent()
+                                container('kaniko') {
+                                  sh '/kaniko/executor --context `pwd` --dockerfile `pwd`/Dockerfile --no-push'
+                                }
+                              }
+                            }
+                          }
+                        }""".stripIndent())
+                    }
+                  }
+                }
+
+    # overwritePlugins: true
+    installPlugins:
+      - kubernetes:4392.v19cea_fdb_5913
+      - workflow-aggregator:608.v67378e9d3db_1
+      - git:5.8.0
+      - configuration-as-code:2006.v001a_2ca_6b_574
+      - job-dsl:1.93
+
+  additionalAgents:
+    python:
+      podName: python
+      customJenkinsLabels: python
+      sideContainerName: python
+      image:
+        repository: python
+        tag: "3"
+      command: "/bin/sh -c"
+      args: "cat"
+      TTYEnabled: true

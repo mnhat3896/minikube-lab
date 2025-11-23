@@ -1,0 +1,29 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: restrict-nettools-debug-image
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods", "pods/ephemeralcontainers"] # pods/ephemeralcontainers will prevent user attach a debug container to existing pod
+  variables:
+    - name: isNettoolsImage
+      expression: >
+        object.spec.containers.exists(c, c.image.contains("nettools")) ||
+        (
+          has(object.spec.initContainers) &&
+          object.spec.initContainers.exists(c, c.image.contains("nettools"))
+        ) ||
+        (
+          has(object.spec.ephemeralContainers) &&
+          object.spec.ephemeralContainers.exists(c, c.image.contains("nettools"))
+        )
+    - name: hasAccess
+      expression: request.userInfo.groups.exists(g, g == "debug-team")
+  validations:
+    - expression: "!(variables.isNettoolsImage) || variables.hasAccess"
+      message: "Only users in group 'debug-team' can create pods using nettools images."

@@ -1,0 +1,3 @@
+minikube start --cni='calico' --container-runtime='docker' --cpus='6' --kubernetes-version='v1.34.0'
+
+istioctl install --set profile=demo --set values.global.platform=minikube
