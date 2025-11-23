@@ -2,18 +2,43 @@ pipeline {
   agent {
     label 'nettools-agent'
   }
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+    timeout(time: 30, unit: 'MINUTES')
+  }
   stages {
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
+    stage('Test') {
+      steps {
+        container('alpine') {
+          sh 'echo "Running static analysis/tests..."'
+          // Example: Check if Dockerfile exists
+          sh 'test -f network-tools/Dockerfile'
+        }
+      }
+    }
     stage('Build') {
       steps {
         container('kaniko') {
-          sh '/kaniko/executor --context `pwd` --dockerfile `pwd`/network-tools/Dockerfile --no-push'
+          sh '/kaniko/executor --context `pwd` --dockerfile `pwd`/network-tools/Dockerfile --no-push --cache=true'
         }
       }
+    }
+  }
+  post {
+    always {
+      echo 'Cleaning up workspace...'
+      cleanWs()
+    }
+    success {
+      echo 'Build succeeded!'
+    }
+    failure {
+      echo 'Build failed!'
     }
   }
 }

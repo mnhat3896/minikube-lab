@@ -53,7 +53,15 @@ jenkins:
               image: gcr.io/kaniko-project/executor:debug
               command: "cat"
               ttyEnabled: true
+              resourceRequestCpu: "500m"
+              resourceRequestMemory: "512Mi"
+              resourceLimitCpu: "1"
+              resourceLimitMemory: "1Gi"
             - name: alpine
               image: alpine:3.20
               command: "cat"
               ttyEnabled: true
+              resourceRequestCpu: "100m"
+              resourceRequestMemory: "128Mi"
+              resourceLimitCpu: "200m"
+              resourceLimitMemory: "256Mi"
