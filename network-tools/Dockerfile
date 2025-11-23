@@ -7,17 +7,6 @@ WORKDIR /home/nettool
 
 RUN apk add --no-cache \
     bind-tools \
-    iputils \
-    iproute2 \
-    tcpdump \
-    mtr \
-    iperf3 \
-    curl \
-    wget \
-    openssl \
-    jq \
-    postgresql-client \
-    redis \
   && rm -rf /var/cache/apk/*
 
 # remove the apk binary to discourage later in-container installs
